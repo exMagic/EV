@@ -1,6 +1,11 @@
 print("-START program.py")
 
-from time import sleep
+import network, urequests, utime, machine
+from machine import RTC
+
+
+
+from time import *
 from umqtt.simple import MQTTClient
 from machine import Pin, ADC
 from machine import I2C
@@ -16,7 +21,8 @@ display.fill(0)
 display.text('Program...', 0, 0, 1)
 display.show()
 
-
+# internal real time clock
+rtc = RTC()
 
 print('Program...1')
 sleep(4)
@@ -31,11 +37,11 @@ pot3 = ADC(Pin(39))
 pot3.atten(ADC.ATTN_11DB)   
 
 
-SERVER = '192.168.1.220'  # MQTT Server Address (Change to the IP address of your Pi)
+SERVER = 'farmer.cloudmqtt.com'  # MQTT Server Address (Change to the IP address of your Pi)
 CLIENT_ID = 'ESP32_DHT22_Sensor'
-TOPIC = b'temp_humidity'
+TOPIC = b'esp'
 
-client = MQTTClient(CLIENT_ID, SERVER)
+client = MQTTClient(CLIENT_ID, SERVER,10668, 'hrrtilwc', 'DO4mpEZjrXUB')
 client.connect()   # Connect to MQTT broker
 
 print("-d2")
@@ -58,6 +64,33 @@ print(lc)
 maxv3 = pot_value3
 minv3 = pot_value3
 
+url = "http://worldtimeapi.org/api/timezone/Europe/Oslo"
+web_query_delay = 60000
+retry_delay = 5000
+update_time = utime.ticks_ms() - web_query_delay
+
+response = urequests.get(url)    
+if response.status_code == 200: # query success        
+    print("JSON response:\n", response.text)            
+    # parse JSON
+    parsed = response.json()
+    datetime_str = str(parsed["datetime"])
+    year = int(datetime_str[0:4])
+    month = int(datetime_str[5:7])
+    day = int(datetime_str[8:10])
+    hour = int(datetime_str[11:13])
+    minute = int(datetime_str[14:16])
+    second = int(datetime_str[17:19])
+    subsecond = int(round(int(datetime_str[20:26]) / 10000))
+        
+    # update internal RTC
+    rtc.datetime((year, month, day, 0, hour, minute, second, subsecond))
+    update_time = utime.ticks_ms()
+    print("RTC updated\n")
+   
+else: # query failed, retry retry_delay ms later
+    update_time = utime.ticks_ms() - web_query_delay + retry_delay
+
 while True:
     pot_value = pot.read()
     pot_value2 = pot2.read()
@@ -67,9 +100,6 @@ while True:
         maxv3 = pot_value3
     if pot_value3 < minv3:
         minv3 = pot_value3
-
-
-
 
     lt[9] = lt[8] 
     lt[8] = lt[7] 
@@ -81,7 +111,6 @@ while True:
     lt[2] = lt[1] 
     lt[1] = lt[0] 
     lt[0] = pot_value  
-
 
     lv[9] = lv[8] 
     lv[8] = lv[7] 
@@ -105,41 +134,29 @@ while True:
     lc[1] = lc[0] 
     lc[0] = pot_value3  
 
-
     temp = int((lt[0] + lt[1] + lt[2] + lt[3] + lt[4] + lt[5] + lt[6] + lt[7] + lt[8] + lt[9]) / 10)
     volt = int((lv[0] + lv[1] + lv[2] + lv[3] + lv[4] + lv[5] + lv[6] + lv[7] + lv[8] + lv[9]) / 10)
     amp = int((lc[0] + lc[1] + lc[2] + lc[3] + lc[4] + lc[5] + lc[6] + lc[7] + lc[8] + lc[9]) / 10)
 
-    print("temp: " + str(temp) + "  |  volt: " + str(volt) + "  |  amp: " + str(amp) + " | maxc: " + str(maxv3)+ " | minc: " + str(minv3))
+    date_str = "{1:02d}/{2:02d}/{0:4d}".format(*rtc.datetime())
+    time_str = "{4:02d}:{5:02d}:{6:02d}".format(*rtc.datetime())
 
-    # sleep(1)
+    if utime.ticks_ms() - update_time >= 1000:
 
-    # mv1 = pot_value / 4096
-    # mv2 = mv1 * 3.3
-    # mv3 = mv2 -0.5
+        #MQTT
+        msg =  date_str + ' ' + time_str + ' ' + str(temp) + ', ' + str(volt) + ', ' + str(amp)
+        client.publish(TOPIC, msg) 
+        #TERMINAL PI
+        print(msg)    
+
+        #DISPLAY
+        display.fill(0)
+        display.text('temp: ' + str(temp), 2, 0, 99)    
+        display.text('Volt: ' + str(volt), 2, 12, 99)
+        display.text('Aamp: ' + str(amp), 2, 24, 99)    
+        display.show()
+
+        update_time = utime.ticks_ms()
+
     
-
-    # ct = mv3 * 100
-
-    # mv = pot_value * (3300/4096)
-
-    # ct = (mv - 500) /10
-
-    # msg = str(pot_value)
-    # client.publish(TOPIC, msg)  # Publish sensor data to MQTT topic
-    # print(msg)
-    display.fill(0)
-    display.text('temp: ' + str(temp), 2, 0, 99)
-    
-    display.text('Volt: ' + str(volt), 2, 12, 99)
-    display.text('Aamp: ' + str(amp), 2, 24, 99)
-    display.text('Magda & Kamil', 2, 36, 99)
-    # display.text('mv3: ' + str(mv3), 2, 36, 99)
-    
-    display.show()
-    #sleep(1)
-
-
-
-
 
