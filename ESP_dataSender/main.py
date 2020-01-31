@@ -3,4 +3,4 @@
 
 print("-START MAIN")
 
-import connect.py
+import program.py
