@@ -4,30 +4,55 @@ import os
 import uos
 from network import mDNS, ftp, telnet, STA_IF, WLAN
 # import network, urequests, utime, machine
-import urequests, utime, machine
-from machine import RTC
-
-
+import urequests, utime
+# from machine import RTC
 
 from time import *
 from umqtt.simple import MQTTClient
-from machine import Pin, ADC, idle
-from machine import I2C
+from machine import Pin, ADC, idle, I2C, reset
+from machine import RTC
 
 import array as arr
 
 import sh1106
 
+from ntptime import settime
+print(settime())
+
 # ///////// VARIABLES
 Net = 0
+rtc = RTC()
+rtc.ntp_sync(server="hr.pool.ntp.org", tz="CET-1CEST")
+rtc.synced()
+print(rtc)
+utime.gmtime()
+print(utime.gmtime())
 # ///////// SETUP
+
+def SaveEventLog(payload):
+    #save to sdcard
+    f = open('log.txt', 'a')
+    f.write(payload + '\n')
+    f.close()
+    #send mq
+
 print(" ///////// SETUP")
 try:
-    # start OLED
+    # ///// start OLED
 
-    # internal real time clock
-    rtc = RTC()
     mdns = mDNS()
+
+    # print(rtc)
+    # print(type(rtc()))
+    # print type(rtc())
+    # print type(rtc).__name__
+
+    # ///// START SD
+    uos.sdconfig(uos.SDMODE_SPI, clk=5, mosi=18, miso=19, cs=15, maxspeed=16)
+    os.mountsd(True)
+
+    SaveEventLog('SETUP END')
+
 except Exception as e:
     print("--Exception: " + str(e))
 
@@ -35,15 +60,7 @@ except Exception as e:
 
 
 
-# SaveEventLog( version , time)
 
-
-
-# # //////// SAVE EVENT LOG
-# def SaveEventLog(payload):
-#     #save to sdcard
-
-#     #send mq
 
 
 #-----------------------------------------------------
@@ -51,7 +68,8 @@ except Exception as e:
 # //////// CONNECT
 print(" //////// CONNECT")
 try:
-    f = open("pass.py", "r")
+    SaveEventLog('START CONNECT')
+    f = open("pass2.txt", "r")
     lines = f.read().split("\n") 
     _ssid = lines[0]
     _pass = lines[1]
@@ -59,8 +77,6 @@ try:
     _pass2 = lines[3]
     f.close()   
 
-    # station = network.WLAN(network.STA_IF)
-    # station.active(True)
     print("_ssid : " + _ssid)
     print("_pass : " + _pass)
 
@@ -75,6 +91,7 @@ try:
     nets = wlan.scan()
     
     update_time = utime.ticks_ms()
+    
 
     for net in nets:
         ssid = str(net[0])        
@@ -85,21 +102,15 @@ try:
             while not wlan.isconnected():
                 # idle() # save power while waiting
                 if utime.ticks_ms() - update_time > 15000:
-                    print('timeout')        
-                    
+                    print('timeout')
                     break
-                    print('w1')     
 
-            print('w2')
             if wlan.isconnected():
                 Net = 1
                 print('WLAN connection succeeded to : ' + ssid)
                 print("Net = " + str(Net))                
-                            
-            print('a--92')
-        
-        print('a--94')
-    print('a--96')
+                break        
+
 
 
     if Net == 0:
@@ -114,49 +125,94 @@ try:
                 while not wlan.isconnected():
                     # idle() # save power while waiting
                     if utime.ticks_ms() - update_time > 15000:
-                        print('timeout')        
-                            
+                        print('timeout')
                         break
-                        print('bw1')     
-                print('bw2')
+                        
                 if wlan.isconnected():
                     Net = 2
                     print('WLAN connection succeeded to : ' + ssid)
                     print("Net = " + str(Net))                
                     break        
-                print('bw4')
-                            
-                # break            
-            print('b--93')
+                      
 
-    print('b--95')
+    print("Finall Net = " + str(Net))       
+    SaveEventLog("Finall Net = " + str(Net))    
 
-    print("Final Net = " + str(Net))       
-            
 
-    # station.connect(_user, _pass)
-    
-    # update_time = utime.ticks_ms()
-    
-    
-    # while not station.isconnected():
-    #     #print(station.isconnected())
-    #         # idle() # save power while waiting
-
-    #     if utime.ticks_ms() - update_time > 15000:
-    #         print("before brake")
-    #         update_time = utime.ticks_ms()
-    #         brake
-    #         print("after brake")        
-            
-    # print('WLAN connection succeeded!')
-    # Net = 1
 except Exception as e:
     print("--Exception: " + str(e))
-#try Wasiek
+    SaveEventLog("--Exception: " + str(e))    
 
 
-print('WENDDDD')
+# /////////////// SET CLOCK    
+if Net == 1:
+    try:
+
+        # 'rtc.ntp_sync(server="hr.pool.ntp.org", tz="CET-1CEST")
+        
+        # 'print(rtc.synced())
+        
+        # 'print(utime.gmtime())
+
+        print('\n\n\n')
+
+        url = "http://worldtimeapi.org/api/timezone/Europe/Oslo"
+        web_query_delay = 60000
+        retry_delay = 5000
+        update_time = utime.ticks_ms() - web_query_delay
+
+        response = urequests.get(url)    
+        if response.status_code == 200: # query success        
+            print("JSON response:\n", response.text)            
+            # parse JSON
+            parsed = response.json()
+            print("d1")            
+
+            datetime_str = str(parsed["datetime"])
+            print(datetime_str)            
+
+            year = int(datetime_str[0:4])
+            month = int(datetime_str[5:7])
+            day = int(datetime_str[8:10])
+            hour = int(datetime_str[11:13])
+            minute = int(datetime_str[14:16])
+            second = int(datetime_str[17:19])
+            subsecond = int(round(int(datetime_str[20:26]) / 10000))
+
+            myTime = str(year) + "/" + str(month) + "/" + str(day) + " " + str(hour) + ":" + str(minute) + ":" + str(second) + ":" + str(subsecond)
+            print("check")
+            rtc.init(datetime_str)
+
+            # update internal RTC
+            print(rtc.now())            
+            print(myTime)            
+
+            # rtc.datetime((year, month, day, 0, hour, minute, second, subsecond))
+            print("d4")    
+
+            update_time = utime.ticks_ms()
+            print("RTC updated\n")
+            SaveEventLog("RTC updated")    
+
+            # date_str = "{1:02d}/{2:02d}/{0:4d}".format(*rtc.datetime())
+            # time_str = "{4:02d}:{5:02d}:{6:02d}".format(*rtc.datetime())
+            # print(date_str + " " + time_str)
+            # SaveEventLog(date_str + " " + time_str)    
+
+        else: # query failed, retry retry_delay ms later
+            update_time = utime.ticks_ms() - web_query_delay + retry_delay
+            print("RTC ERROR")
+
+    except Exception as e:
+        print("--Exception: " + str(e))
+        SaveEventLog("--Exception: " + str(e))    
+
+
+
+print(settime())
+
+
+print('----------------END-------------------')
 # while True:
 
 #     print(station.isconnected())
