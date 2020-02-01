@@ -2,7 +2,9 @@ print("-START program.py")
 
 import os
 import uos
-import network, urequests, utime, machine
+from network import mDNS, ftp, telnet, STA_IF, WLAN
+# import network, urequests, utime, machine
+import urequests, utime, machine
 from machine import RTC
 
 
@@ -16,17 +18,16 @@ import array as arr
 
 import sh1106
 
-
+# ///////// VARIABLES
+Net = 0
 # ///////// SETUP
-
-
+print(" ///////// SETUP")
 try:
     # start OLED
-    print(" ///////// SETUP")
 
     # internal real time clock
     rtc = RTC()
-    
+    mdns = mDNS()
 except Exception as e:
     print("--Exception: " + str(e))
 
@@ -52,38 +53,113 @@ print(" //////// CONNECT")
 try:
     f = open("pass.py", "r")
     lines = f.read().split("\n") 
-    _user = lines[0]
+    _ssid = lines[0]
     _pass = lines[1]
+    _ssid2 = lines[2]
+    _pass2 = lines[3]
     f.close()   
 
-    station = network.WLAN(network.STA_IF)
-    station.active(True)
-    print(_user)
-    print(_pass)
+    # station = network.WLAN(network.STA_IF)
+    # station.active(True)
+    print("_ssid : " + _ssid)
+    print("_pass : " + _pass)
 
-    station.connect(_user, _pass)
+    print("_ssid2 : " + _ssid2)
+    print("_pass2 : " + _pass2)
+
+    _ssidString = "b'" + _ssid + "'"
+    _ssid2String = "b'" + _ssid2 + "'"
+
+    wlan = WLAN(STA_IF)
+    wlan.active(True)
+    nets = wlan.scan()
     
     update_time = utime.ticks_ms()
-    
-    
-    while not station.isconnected():
-        #print(station.isconnected())
-            # idle() # save power while waiting
 
-        if utime.ticks_ms() - update_time > 15000:
-            print("before brake")
-            update_time = utime.ticks_ms()
-            brake
-            print("after brake")        
+    for net in nets:
+        ssid = str(net[0])        
+        print(ssid)
+        if ssid == _ssidString:
+            print('try connecto to ' + ssid)        
+            wlan.connect(_ssid, _pass)
+            while not wlan.isconnected():
+                # idle() # save power while waiting
+                if utime.ticks_ms() - update_time > 15000:
+                    print('timeout')        
+                    
+                    break
+                    print('w1')     
+
+            print('w2')
+            if wlan.isconnected():
+                Net = 1
+                print('WLAN connection succeeded to : ' + ssid)
+                print("Net = " + str(Net))                
+                            
+            print('a--92')
+        
+        print('a--94')
+    print('a--96')
+
+
+    if Net == 0:
+        print('b--92')
+        for net in nets:
+            ssid = str(net[0])        
+            print(ssid)
+
+            if ssid == _ssid2String:
+                print('try connecto to ' + ssid)        
+                wlan.connect(_ssid2, _pass2)
+                while not wlan.isconnected():
+                    # idle() # save power while waiting
+                    if utime.ticks_ms() - update_time > 15000:
+                        print('timeout')        
+                            
+                        break
+                        print('bw1')     
+                print('bw2')
+                if wlan.isconnected():
+                    Net = 2
+                    print('WLAN connection succeeded to : ' + ssid)
+                    print("Net = " + str(Net))                
+                    break        
+                print('bw4')
+                            
+                # break            
+            print('b--93')
+
+    print('b--95')
+
+    print("Final Net = " + str(Net))       
             
 
-    print('WLAN connection succeeded!')
+    # station.connect(_user, _pass)
+    
+    # update_time = utime.ticks_ms()
+    
+    
+    # while not station.isconnected():
+    #     #print(station.isconnected())
+    #         # idle() # save power while waiting
 
+    #     if utime.ticks_ms() - update_time > 15000:
+    #         print("before brake")
+    #         update_time = utime.ticks_ms()
+    #         brake
+    #         print("after brake")        
+            
+    # print('WLAN connection succeeded!')
+    # Net = 1
 except Exception as e:
     print("--Exception: " + str(e))
 #try Wasiek
 
-print(" jojo")
+
+print('WENDDDD')
+# while True:
+
+#     print(station.isconnected())
 
 
 #set Net = 1
