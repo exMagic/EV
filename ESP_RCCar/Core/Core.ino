@@ -3,11 +3,11 @@
 #include "secrets.h"
 #include "EspMQTTClient.h"
 
-#define MDASH_APP_NAME "Main"
+#define MDASH_APP_NAME "Core"
 
 const int led = 2;
 unsigned long previousMillis = 0;
-const long interval = 100;
+const long interval = 500;
 bool ledState = 0;
 
 ///MQTT
