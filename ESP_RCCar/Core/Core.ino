@@ -7,7 +7,7 @@
 
 const int led = 2;
 unsigned long previousMillis = 0;
-const long interval = 500;
+const long interval = 100;
 bool ledState = 0;
 
 ///MQTT

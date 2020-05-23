@@ -1,0 +1,1 @@
+curl -F file=@C:\Users\Maciek\Documents\GitHub\EV\ESP_RCCar\Core\Core.ino.esp32.bin https://mdash.net/api/v2/devices/device4/ota?access_token=***

@@ -124,3 +124,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 ESP_RCCar/Core/secrets.h
+ESP_RCCar/Core/Core.ino.esp32.bin
