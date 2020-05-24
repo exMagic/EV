@@ -3,6 +3,3 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-src/secrets.h
-HAL9001/src/secrets.h
-src/secrets.h
