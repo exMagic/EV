@@ -6,4 +6,3 @@
 #define SECRET_MQTT_PASSWORD ""
 #define SECRET_MQTT_CLIENT_NAME ""
 #define SECRET_MQTT_PORT 0
-
