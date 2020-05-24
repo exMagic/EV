@@ -1,9 +1,9 @@
+#include <Arduino.h>
+
 #include <WiFi.h>
 #include <mDash.h>
 #include "secrets.h"
 #include "EspMQTTClient.h"
-
-#define MDASH_APP_NAME "Core"
 
 const int led = 2;
 unsigned long previousMillis = 0;
