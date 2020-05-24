@@ -125,5 +125,4 @@ dmypy.json
 .pyre/
 ESP_RCCar/Core/secrets.h
 ESP_RCCar/Core/Core.ino.esp32.bin
-HAL9001/src/secrets.h
-HAL9001/src/secrets.h
+HAL9001/src/my/secrets.h
