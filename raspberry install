@@ -1,0 +1,3 @@
+https://pimylifeup.com/raspberry-pi-mysql/
+https://pimylifeup.com/raspberry-pi-phpmyadmin/
+sudo apt-get -y install python-mysql.connector
