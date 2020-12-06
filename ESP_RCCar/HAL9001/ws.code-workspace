@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "..\\.."
+		},
+		{
+			"name": "HAL9002",
+			"path": "..\\..\\..\\..\\..\\Users\\Maciek\\Documents\\PlatformIO\\Projects\\HAL9002"
+		},
+		{
+			"name": "testmqtt",
+			"path": "..\\..\\..\\..\\..\\Users\\Maciek\\Documents\\PlatformIO\\Projects\\testmqtt"
+		}
+	],
+	"settings": {}
+}
